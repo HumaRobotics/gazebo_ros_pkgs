@@ -77,7 +77,8 @@ class DefaultRobotHWSim : public gazebo_ros_control::RobotHWSim {
  public:
 
   bool initSim(
-      const std::string& robot_namespace, ros::NodeHandle model_nh,
+      const std::string& robot_namespace, 
+      ros::NodeHandle model_nh,
       gazebo::physics::ModelPtr parent_model,
       const urdf::Model * const urdf_model,
       std::vector<transmission_interface::TransmissionInfo> transmissions) {
@@ -115,15 +116,11 @@ class DefaultRobotHWSim : public gazebo_ros_control::RobotHWSim {
 
       // Check that this transmission has one actuator
       if (transmissions[j].actuators_.size() == 0) {
-        ROS_WARN_STREAM_NAMED(
-            "default_robot_hw_sim",
-            "Transmission " << transmissions[j].name_
+        ROS_WARN_STREAM_NAMED("default_robot_hw_sim","Transmission " << transmissions[j].name_
                 << " has no associated actuators.");
         continue;
       } else if (transmissions[j].actuators_.size() > 1) {
-        ROS_WARN_STREAM_NAMED(
-            "default_robot_hw_sim",
-            "Transmission " << transmissions[j].name_
+        ROS_WARN_STREAM_NAMED("default_robot_hw_sim","Transmission " << transmissions[j].name_
                 << " has more than one actuator. Currently the default robot hardware simulation "
                 << " interface only supports one.");
         continue;
@@ -137,41 +134,33 @@ class DefaultRobotHWSim : public gazebo_ros_control::RobotHWSim {
       joint_effort_command_[j] = 0.0;
       joint_velocity_command_[j] = 0.0;
 
-      const std::string& hardware_interface = transmissions[j].actuators_[0]
-          .hardware_interface_;
+      const std::string& hardware_interface = transmissions[j].actuators_[0].hardware_interface_;
 
       // Debug
-      ROS_DEBUG_STREAM_NAMED(
-          "default_robot_hw_sim",
-          "Loading joint '" << joint_names_[j] << "' of type '"
+      ROS_DEBUG_STREAM_NAMED("default_robot_hw_sim","Loading joint '" << joint_names_[j] 
+        << "' of type '"
               << hardware_interface << "'");
 
       // Create joint state interface for all joints
-      js_interface_.registerHandle(
-          hardware_interface::JointStateHandle(joint_names_[j],
-                                               &joint_position_[j],
-                                               &joint_velocity_[j],
-                                               &joint_effort_[j]));
+      js_interface_.registerHandle(hardware_interface::JointStateHandle(
+          joint_names_[j], &joint_position_[j], &joint_velocity_[j], &joint_effort_[j]));
 
       // Decide what kind of command interface this actuator/joint has
       if (hardware_interface == "EffortJointInterface") {
         // Create effort joint interface
-        hardware_interface::JointHandle joint_handle(
-            js_interface_.getHandle(joint_names_[j]),
-            &joint_effort_command_[j]);
+        hardware_interface::JointHandle joint_handle(js_interface_.getHandle(joint_names_[j]),
+                                                     &joint_effort_command_[j]);
         ej_interface_.registerHandle(joint_handle);
-        registerEffortJointLimits(joint_names_[j], joint_handle, joint_limit_nh,
-                                  urdf_model);
-      } else if (hardware_interface == "VelocityJointInterface") {
+        registerEffortJointLimits(joint_names_[j], joint_handle, joint_limit_nh, urdf_model);
+      } 
+      else if (hardware_interface == "VelocityJointInterface") {
         // Create velocity joint interface
-        vj_interface_.registerHandle(
-            hardware_interface::JointHandle(
-                js_interface_.getHandle(joint_names_[j]),
-                &joint_velocity_command_[j]));
-      } else {
-        ROS_FATAL_STREAM_NAMED(
-            "default_robot_hw_sim",
-            "No matching hardware interface found for '" << hardware_interface);
+        vj_interface_.registerHandle(hardware_interface::JointHandle(
+            js_interface_.getHandle(joint_names_[j]),&joint_velocity_command_[j]));
+      } 
+      else {
+        ROS_FATAL_STREAM_NAMED("default_robot_hw_sim","No matching hardware interface found for '" 
+          << hardware_interface);
         return false;
       }
 
@@ -209,8 +198,7 @@ class DefaultRobotHWSim : public gazebo_ros_control::RobotHWSim {
       if (joint) {
         sim_joints_.push_back(joint);
       } else {
-        ROS_ERROR_STREAM(
-            "This robot has a joint named \"" << joint_names_[j]
+        ROS_ERROR_STREAM("This robot has a joint named \"" << joint_names_[j]
                 << "\" which is not in the gazebo model.");
         return false;
       }
@@ -222,10 +210,10 @@ class DefaultRobotHWSim : public gazebo_ros_control::RobotHWSim {
     for (unsigned int j = 0; j < n_dof_; j++) {
       // Gazebo has an interesting API...
       // \todo If the joint is a slider joint, do not call shortest_angular_distance().
-      joint_position_[j] += angles::shortest_angular_distance(
-          joint_position_[j], sim_joints_[j]->GetAngle(0).Radian());
+      joint_position_[j] += angles::shortest_angular_distance(joint_position_[j], 
+                             sim_joints_[j]->GetAngle(0).Radian());
       joint_velocity_[j] = sim_joints_[j]->GetVelocity(0);
-      joint_effort_[j] = sim_joints_[j]->GetForce((unsigned int) (0));
+      joint_effort_[j] = sim_joints_[j]->GetForce((unsigned int)(0));
     }
   }
 
@@ -246,8 +234,8 @@ boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(mutex);
 
       // Output debug every nth msg
       if (!(j % 10) && false) {
-        ROS_DEBUG_STREAM_NAMED("robot_hw_sim",
-                               "SetForce " << joint_effort_command_[j]);
+        ROS_DEBUG_STREAM_NAMED("robot_hw_sim","SetForce " 
+                                << joint_effort_command_[j]);
       }
     }
   }
@@ -255,19 +243,17 @@ boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(mutex);
  private:
   // Register the limits of the joint specified by joint_name and joint_handle. The limits are
   // retrieved from joint_limit_nh. If urdf_model is not NULL, limits are retrieved from it also.
-  void registerEffortJointLimits(
-      const std::string& joint_name,
-      const hardware_interface::JointHandle& joint_handle,
-      const ros::NodeHandle& joint_limit_nh,
-      const urdf::Model * const urdf_model) {
+  void registerEffortJointLimits(const std::string& joint_name,
+                                 const hardware_interface::JointHandle& joint_handle,
+                                 const ros::NodeHandle& joint_limit_nh,
+                                 const urdf::Model * const urdf_model) {
     joint_limits_interface::JointLimits limits;
     bool has_limits = false;
     joint_limits_interface::SoftJointLimits soft_limits;
     bool has_soft_limits = false;
 
     if (urdf_model != NULL) {
-      const boost::shared_ptr<const urdf::Joint> urdf_joint = urdf_model
-          ->getJoint(joint_name);
+      const boost::shared_ptr<const urdf::Joint> urdf_joint = urdf_model->getJoint(joint_name);
       if (urdf_joint != NULL) {
         // Get limits from the URDF file.
         if (joint_limits_interface::getJointLimits(urdf_joint, limits))
@@ -277,16 +263,16 @@ boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(mutex);
       }
     }
     // Get limits from the parameter server.
-    if (joint_limits_interface::getJointLimits(joint_name, joint_limit_nh,
-                                               limits))
+    if (joint_limits_interface::getJointLimits(joint_name, joint_limit_nh, limits))
       has_limits = true;
 
     if (has_limits) {
       if (has_soft_limits) {
-        const joint_limits_interface::EffortJointSoftLimitsHandle limits_handle(
-            joint_handle, limits, soft_limits);
+        const joint_limits_interface::EffortJointSoftLimitsHandle 
+            limits_handle(joint_handle, limits, soft_limits);
         ej_limits_interface_.registerHandle(limits_handle);
-      } else {
+      } 
+      else {
         const joint_limits_interface::EffortJointSaturationHandle sat_handle(
             joint_handle, limits);
         ej_sat_interface_.registerHandle(sat_handle);
@@ -310,11 +296,8 @@ boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(mutex);
   std::vector<double> joint_effort_command_;
   std::vector<double> joint_velocity_command_;
   std::vector<double> gravity_cmd;
-  int *pp;
   std::vector<gazebo::physics::JointPtr> sim_joints_;
-  //int* p;
   boost::interprocess::interprocess_mutex *mtx;
-  int* test;
   std::pair<std::string*, std::size_t> p;
 
   typedef boost::interprocess::allocator<char,
@@ -327,8 +310,6 @@ boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(mutex);
       boost::interprocess::managed_shared_memory::segment_manager> StringAllocator;
   typedef boost::interprocess::vector<MyShmString, StringAllocator> MyShmStringVector;
   typedef boost::interprocess::vector<double, DoubleAllocator> MyDoubleVector;
-  //int mutexx;
-  //baxter_en::baxter_enable ben(mutexx);
 };
 
 typedef boost::shared_ptr<DefaultRobotHWSim> DefaultRobotHWSimPtr;
